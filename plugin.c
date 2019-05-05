@@ -88,7 +88,7 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
     __xrw uint32_t key_val_rw[3];
 
-    __xread uint32_t heap_size_r;
+    __xrw uint32_t heap_size_r;
     __xwrite uint32_t key_pointer_index_w;
     __xwrite uint32_t counter;
     __addr40 __emem tracking *heap_info;
