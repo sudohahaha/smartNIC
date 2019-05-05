@@ -151,7 +151,7 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 //    mem_write_atomic(&i,&state_hashtable[update_hash_value].entry[i].test, sizeof(i));
 
     //increase the heap_size by 1
-    mem_incr32(&heapify[hash_value].heap_size);
+    mem_incr32(&heapify[update_hash_value].heap_size);
    
 
     return PIF_PLUGIN_RETURN_FORWARD;
