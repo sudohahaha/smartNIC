@@ -33,7 +33,7 @@ typedef struct bucket_entry_info {
 typedef struct bucket_entry {
 
     uint32_t key[3]; /* ip1, ip2, ports */
-    uint32_t test;
+//    uint32_t test;
 
     bucket_entry_info bucket_entry_info_value;
 
@@ -146,7 +146,7 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     mem_write_atomic(&tmp_b_info, b_info, sizeof(tmp_b_info));
 
     mem_write_atomic(key_val_rw,(__addr40 void *)key_addr, sizeof(key_val_rw));
-    mem_write_atomic(&i,&state_hashtable[update_hash_value].entry[i].test, sizeof(i));
+//    mem_write_atomic(&i,&state_hashtable[update_hash_value].entry[i].test, sizeof(i));
 
 
    
