@@ -220,7 +220,7 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
     //read the heap_size
     mem_read_atomic(&heap_size_r, &heapify[hash_value].heap_size, sizeof(heap_size_r));
     heap_size_check_w = heap_size_r;
-    mem_write_atomic(&heap_size_r, (__addr40 void *)&heap_size_check, sizeof(heap_size_r));
+    mem_write_atomic(&heap_size_check_w, (__addr40 void *)&heap_size_check, sizeof(heap_size_check_w));
     if(heap_size_r < BUCKET_SIZE){
         hash_entry_full = 0;
     }
