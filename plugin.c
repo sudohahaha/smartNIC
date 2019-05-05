@@ -62,8 +62,8 @@ __shared __export __addr40 __emem bucket_list state_hashtable[STATE_TABLE_SIZE +
 __shared __export __addr40 __emem tracking heapify[STATE_TABLE_SIZE + 1];
 __shared __export __addr40 __emem uint32_t heap_size_check;
 //__shared __export __addr40 __emem uint32_t heap_arr_check;
-__shared __export __addr40 __emem uint32_t heap_keypointer_check;
-__shared __export __addr40 __emem uint32_t update_function_check;
+//__shared __export __addr40 __emem uint32_t heap_keypointer_check;
+//__shared __export __addr40 __emem uint32_t update_function_check;
 int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
                         MATCH_DATA_T *match_data)
@@ -94,8 +94,8 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     __xwrite uint32_t counter;
     __addr40 __emem tracking *heap_info;
     
-    __xwrite uint32_t keypointer_check_w;
-    __xwrite uint32_t heap_size_check_w;
+//    __xwrite uint32_t keypointer_check_w;
+//    __xwrite uint32_t heap_size_check_w;
 
     uint32_t i = 0;
 
@@ -142,12 +142,12 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     
     //let the new key pointer index point to the new key memory addr.
     key_pointer_index_w = heap_size_r;
-    keypointer_check_w = heap_size_r;
+//    keypointer_check_w = heap_size_r;
     mem_write_atomic(&key_pointer_index_w, &heap_info->key_pointer_index[heap_size_r], sizeof(key_pointer_index_w));
     
-    heap_size_check_w = heap_size_r;
-    mem_write_atomic(&heap_size_check_w, (__addr40 void *)&heap_size_check, sizeof(heap_size_check_w));
-    mem_write_atomic(&keypointer_check_w, &heap_keypointer_check, sizeof(keypointer_check_w));
+//    heap_size_check_w = heap_size_r;
+//    mem_write_atomic(&heap_size_check_w, (__addr40 void *)&heap_size_check, sizeof(heap_size_check_w));
+//    mem_write_atomic(&keypointer_check_w, &heap_keypointer_check, sizeof(keypointer_check_w));
     
     //write the corresponding counter to heap_info
     counter = 1;
@@ -162,7 +162,10 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
     //increase the heap_size by 1
     mem_incr32(&heapify[update_hash_value].heap_size);
-    mem_incr32(&update_function_check);
+//    mem_incr32(&update_function_check);
+    
+    
+    //heapify
 
     return PIF_PLUGIN_RETURN_FORWARD;
 
@@ -190,6 +193,9 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
     __addr40 bucket_entry_info *b_info;
 
     __addr40 tracking *heap_info;
+    
+    __xread uint32_t heap_arr_r[BUCKET_SIZE];
+    __xread uint32_t key_pointer_index[BUCKET_SIZE];
     
     
     
@@ -276,7 +282,7 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
 
             }
 
-
+            break;
 //            return PIF_PLUGIN_RETURN_FORWARD;
 
         }
