@@ -24,7 +24,7 @@
 
 typedef struct bucket_entry_info {
 
-    uint32_t hit_count; /* for timeouts */
+    uint32_t hit_count[3];
 
 } bucket_entry_info;
 
@@ -137,7 +137,9 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 	return PIF_PLUGIN_RETURN_FORWARD;
 
 
-    tmp_b_info.hit_count = 1;
+    tmp_b_info.hit_count[0] = 1;
+    tmp_b_info.hit_count[1] = 1;
+    tmp_b_info.hit_count[2] = 1;
 
 
 
@@ -236,17 +238,23 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
             
             count = 1;
 
-            mem_test_add(&count,(__addr40 void *)&b_info->hit_count, 1 << 2);
+            mem_test_add(&count,(__addr40 void *)&b_info->hit_count[0], 1 << 2);
+            mem_test_add(&count,(__addr40 void *)&b_info->hit_count[1], 1 << 2);
+            mem_test_add(&count,(__addr40 void *)&b_info->hit_count[2], 1 << 2);
 
             if (count == 0xFFFFFFFF-1) { /* Never incr to 0 or 2^32 */
 
                 count = 2;
 
-                mem_add32(&count,(__addr40 void *)&b_info->hit_count, 1 << 2);
+                mem_add32(&count,(__addr40 void *)&b_info->hit_count[0], 1 << 2);
+                mem_add32(&count,(__addr40 void *)&b_info->hit_count[1], 1 << 2);
+                mem_add32(&count,(__addr40 void *)&b_info->hit_count[2], 1 << 2);
 
             } else if (count == 0xFFFFFFFF) {
 
-                mem_incr32((__addr40 void *)&b_info->hit_count);
+                mem_incr32((__addr40 void *)&b_info->hit_count[0]);
+                mem_incr32((__addr40 void *)&b_info->hit_count[1]);
+                mem_incr32((__addr40 void *)&b_info->hit_count[2]);
 
             }
 
