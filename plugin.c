@@ -60,8 +60,8 @@ typedef struct tracking {
 
 __shared __export __addr40 __emem bucket_list state_hashtable[STATE_TABLE_SIZE + 1];
 __shared __export __addr40 __emem tracking heapify[STATE_TABLE_SIZE + 1];
-__shared __export __addr40 __emem uint32_t heap_size_check;
-
+//__shared __export __addr40 __emem uint32_t heap_size_check;
+__shared __export __addr40 __emem uint32_t heap_arr_check;
 int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
                         MATCH_DATA_T *match_data)
@@ -175,7 +175,7 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
     
     __xread uint32_t heap_size_r;
     
-    __xwrite uint32_t heap_size_check_w;
+    __xwrite uint32_t heap_arr_check_w;
 
     __addr40 bucket_entry_info *b_info;
 
@@ -219,8 +219,8 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
     
     //read the heap_size
     mem_read_atomic(&heap_size_r, &heapify[hash_value].heap_size, sizeof(heap_size_r));
-    heap_size_check_w = heap_size_r;
-    mem_write_atomic(&heap_size_check_w, (__addr40 void *)&heap_size_check, sizeof(heap_size_check_w));
+//    heap_size_check_w = heap_size_r;
+//    mem_write_atomic(&heap_size_check_w, (__addr40 void *)&heap_size_check, sizeof(heap_size_check_w));
     if(heap_size_r < BUCKET_SIZE){
         hash_entry_full = 0;
     }
@@ -248,7 +248,8 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
             
             //for heap_arr
             mem_test_add(&count,(__addr40 void *)&heap_info->heap_arr[i], 1 << 2);
-
+            heap_arr_check_w = heap_info->heap_arr[i];
+            mem_write_atomic(&heap_arr_check_w, &heap_arr_check, sizeof(heap_arr_check_w));
             if (count == 0xFFFFFFFF-1) { /* Never incr to 0 or 2^32 */
 
                 count = 2;
