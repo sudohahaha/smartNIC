@@ -125,7 +125,7 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     update_hash_value &= (STATE_TABLE_SIZE);
 
     //get the heap_size
-    mem_read_atomic(&heap_size_r, &heapify[hash_value].heap_size, sizeof(heap_size_r));
+    mem_read_atomic(&heap_size_r, &heapify[update_hash_value].heap_size, sizeof(heap_size_r));
     
     /* If bucket full, drop */
     if (heap_size_r == BUCKET_SIZE)
@@ -141,7 +141,7 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     
     //write the corresponding counter to heap_info
     counter = 1;
-    mem_write_atomic(&counter, &heap_info.heap_arr[heap_size_r], sizeof(counter));
+    mem_write_atomic(&counter, &heap_info->heap_arr[heap_size_r], sizeof(counter));
 
     tmp_b_info.hit_count = 1;
     
