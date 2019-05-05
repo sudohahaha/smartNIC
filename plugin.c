@@ -63,6 +63,7 @@ __shared __export __addr40 __emem tracking heapify[STATE_TABLE_SIZE + 1];
 __shared __export __addr40 __emem uint32_t heap_size_check;
 //__shared __export __addr40 __emem uint32_t heap_arr_check;
 __shared __export __addr40 __emem uint32_t heap_keypointer_check;
+__shared __export __addr40 __emem uint32_t update_function_check;
 int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
                         MATCH_DATA_T *match_data)
@@ -161,7 +162,7 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
     //increase the heap_size by 1
     mem_incr32(&heapify[update_hash_value].heap_size);
-   
+    mem_incr32(&update_function_check);
 
     return PIF_PLUGIN_RETURN_FORWARD;
 
