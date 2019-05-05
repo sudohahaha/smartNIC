@@ -15,7 +15,7 @@
 #include <nfp/me.h>
 
 
-#define BUCKET_SIZE 12
+#define BUCKET_SIZE 8
 
 
 #define STATE_TABLE_SIZE 0xF /* 16777200 state table entries available */
