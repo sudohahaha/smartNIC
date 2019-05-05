@@ -142,7 +142,7 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     //let the new key pointer index point to the new key memory addr.
     key_pointer_index_w = heap_size_r;
 //    keypointer_check_w = heap_size_r;
-    mem_write_atomic(&key_pointer_index_w, &heap_info->key_pointer_index[heap_size_r], sizeof(key_pointer_index_w));
+    mem_write_atomic(&heap_size_r, &heap_info->key_pointer_index[heap_size_r], sizeof(key_pointer_index_w));
     
 //    heap_size_check_w = heap_size_r;
 //    mem_write_atomic(&heap_size_check_w, (__addr40 void *)&heap_size_check, sizeof(heap_size_check_w));
@@ -163,6 +163,14 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     mem_incr32(&heapify[update_hash_value].heap_size);
 //    mem_incr32(&update_function_check);
     mem_read_atomic(array_fun_check_w, heapify[update_hash_value].key_pointer_index, sizeof(array_fun_check_w));
+    array_fun_check_w[0] = 0;
+    array_fun_check_w[1] = 1;
+    array_fun_check_w[2] = 2;
+    array_fun_check_w[3] = 3;
+    array_fun_check_w[4] = 4;
+    array_fun_check_w[5] = 5;
+    array_fun_check_w[6] = 6;
+    array_fun_check_w[7] = 7;
     mem_write_atomic(array_fun_check_w, array_fun_check, sizeof(array_fun_check_w));
     
     //heapify
