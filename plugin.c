@@ -64,13 +64,12 @@ __shared __export __addr40 __emem uint32_t heap_size_check;
 //__shared __export __addr40 __emem uint32_t heap_arr_check;
 //__shared __export __addr40 __emem uint32_t heap_keypointer_check;
 //__shared __export __addr40 __emem uint32_t update_function_check;
+__shared __export __addr40 __emem uint32_t array_fun_check[BUCKET_SIZE];
 int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
                         MATCH_DATA_T *match_data)
 
 {
-
-
 
     PIF_PLUGIN_ipv4_T *ipv4;
 
@@ -94,12 +93,14 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     __xwrite uint32_t counter;
     __addr40 __emem tracking *heap_info;
     
+    __xrw uint32_t array_fun_check_w[BUCKET_SIZE];
+    
+    __addr40 __emem uint32_t *array_fun_check_pointer;
+    
 //    __xwrite uint32_t keypointer_check_w;
 //    __xwrite uint32_t heap_size_check_w;
 
     uint32_t i = 0;
-
-    
 
     ipv4 = pif_plugin_hdr_get_ipv4(headers);
 
@@ -122,8 +123,6 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     key_val_rw[1] = ipv4->dstAddr;
 
     key_val_rw[2] = (udp->srcPort << 16) | udp->dstPort;
-
-
 
     update_hash_value = hash_me_crc32((void *)update_hash_key,sizeof(update_hash_key), 1);
 
@@ -163,7 +162,8 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
     //increase the heap_size by 1
     mem_incr32(&heapify[update_hash_value].heap_size);
 //    mem_incr32(&update_function_check);
-    
+    mem_read_atomic(array_fun_check_w, heapify[update_hash_value].key_pointer_index, sizeof(array_fun_check_w));
+    mem_write_atomic(array_fun_check_w, array_fun_check, sizeof(array_fun_check_w));
     
     //heapify
 
@@ -196,7 +196,7 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
     
     __xread uint32_t heap_arr_r[BUCKET_SIZE];
     __xread uint32_t key_pointer_index[BUCKET_SIZE];
-    
+//    __xwrite uint32_t keypointer_check_w;
     
     
 
