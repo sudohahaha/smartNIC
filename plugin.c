@@ -54,6 +54,7 @@ typedef struct bucket_list {
 
 
 __shared __export __addr40 __emem bucket_list state_hashtable[STATE_TABLE_SIZE + 1];
+__shared __export __addr40 __emem uint32_t global_counter;
 
 
 int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
@@ -172,7 +173,7 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
 
     __addr40 bucket_entry_info *b_info;
 
-
+    __addr40 uint32_t *gc;
 
     uint32_t i;
     uint32_t hash_entry_full; 
@@ -184,7 +185,9 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
     udp = pif_plugin_hdr_get_udp(headers);
 
 
-
+    //increase global counter
+    gc = &global_counter;
+    mem_incr32((__addr40 void *)gc);
     /* TODO: Add another field to indicate direction ?*/
 
     hash_key[0] = ipv4->srcAddr;
