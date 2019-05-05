@@ -24,7 +24,7 @@
 
 typedef struct bucket_entry_info {
 
-    uint32_t hit_count[3];
+    uint32_t hit_count;
 
 } bucket_entry_info;
 
@@ -33,7 +33,6 @@ typedef struct bucket_entry_info {
 typedef struct bucket_entry {
 
     uint32_t key[3]; /* ip1, ip2, ports */
-//    uint32_t test;
 
     bucket_entry_info bucket_entry_info_value;
 
@@ -51,10 +50,16 @@ typedef struct bucket_list {
 
 }bucket_list;
 
-
+typedef struct tracking {
+    
+    uint32_t heap_arr[BUCKET_SIZE];
+    uint32_t heap_size;
+    uint32_t key_pointer_index[BUCKET_SIZE];
+    
+}tracking;
 
 __shared __export __addr40 __emem bucket_list state_hashtable[STATE_TABLE_SIZE + 1];
-__shared __export __addr40 __emem uint32_t global_counter;
+__shared __export __addr40 __emem tracking heapify[STATE_TABLE_SIZE + 1];
 
 
 int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
@@ -82,7 +87,10 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
     __xrw uint32_t key_val_rw[3];
 
-
+    __xread uint32_t heap_size_r;
+    __xwrite uint32_t key_pointer_index_w;
+    __xwrite uint32_t counter;
+    __addr40 __emem tracking *heap_info;
 
     uint32_t i = 0;
 
@@ -116,40 +124,34 @@ int pif_plugin_state_update(EXTRACTED_HEADERS_T *headers,
 
     update_hash_value &= (STATE_TABLE_SIZE);
 
-
-
-    for (;i<BUCKET_SIZE;i++) {
-
-        if (state_hashtable[update_hash_value].entry[i].key[0] == 0) {
-
-            b_info = &state_hashtable[update_hash_value].entry[i].bucket_entry_info_value;
-
-            key_addr =(__addr40 uint32_t *) state_hashtable[update_hash_value].entry[i].key;
-
-            break;
-
-        }
-
-    }
-
+    //get the heap_size
+    mem_read_atomic(&heap_size_r, &heapify[hash_value].heap_size, sizeof(heap_size_r));
+    
     /* If bucket full, drop */
+    if (heap_size_r == BUCKET_SIZE)
+        return PIF_PLUGIN_RETURN_FORWARD;
+    
+    key_addr =(__addr40 uint32_t *) state_hashtable[update_hash_value].entry[heap_size_r].key;
+    b_info = &state_hashtable[update_hash_value].entry[heap_size_r].bucket_entry_info_value;
+    heap_info = &heapify[update_hash_value];
+    
+    //let the new key pointer index point to the new key memory addr.
+    key_pointer_index_w = heap_size_r;
+    mem_write_atomic(&key_pointer_index_w, &heap_info->key_pointer_index[heap_size_r], sizeof(key_pointer_index_w));
+    
+    //write the corresponding counter to heap_info
+    counter = 1;
+    mem_write_atomic(&counter, &heap_info.heap_arr[heap_size_r], sizeof(counter));
 
-    if (i == BUCKET_SIZE)
-	return PIF_PLUGIN_RETURN_FORWARD;
-
-
-    tmp_b_info.hit_count[0] = 1;
-    tmp_b_info.hit_count[1] = 1;
-    tmp_b_info.hit_count[2] = 1;
-
-
-
+    tmp_b_info.hit_count = 1;
+    
     mem_write_atomic(&tmp_b_info, b_info, sizeof(tmp_b_info));
 
     mem_write_atomic(key_val_rw,(__addr40 void *)key_addr, sizeof(key_val_rw));
 //    mem_write_atomic(&i,&state_hashtable[update_hash_value].entry[i].test, sizeof(i));
 
-
+    //increase the heap_size by 1
+    mem_incr32(&heapify[hash_value].heap_size);
    
 
     return PIF_PLUGIN_RETURN_FORWARD;
@@ -170,10 +172,14 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
     uint32_t  hash_key[3];
 
     __xread uint32_t hash_key_r[3];
+    
+    __xread uint32_t heap_size_r;
 
     __addr40 bucket_entry_info *b_info;
 
-    __addr40 uint32_t *gc;
+    __addr40 tracking *heap_info;
+    
+    
 
     uint32_t i;
     uint32_t hash_entry_full; 
@@ -185,9 +191,6 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
     udp = pif_plugin_hdr_get_udp(headers);
 
 
-    //increase global counter
-    gc = (__addr40 uint32_t *) &global_counter;
-    mem_incr32((__addr40 void *)gc);
     /* TODO: Add another field to indicate direction ?*/
 
     hash_key[0] = ipv4->srcAddr;
@@ -210,20 +213,15 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
 
     hash_entry_full = 1;
     flow_entry_found= 0;
-
-    for (i = 0; i < BUCKET_SIZE; i++) {
+    
+    //read the heap_size
+    mem_read_atomic(&heap_size_r, &heapify[hash_value].heap_size, sizeof(heap_size_r));
+    if(heap_size_r < BUCKET_SIZE){
+        hash_entry_full = 0;
+    }
+    for (i = 0; i < heap_size_r; i++) {
 
         mem_read_atomic(hash_key_r, state_hashtable[hash_value].entry[i].key, sizeof(hash_key_r)); /* TODO: Read whole bunch at a time */
-
-
-
-        if (hash_key_r[0] == 0) {
-	    hash_entry_full = 0;
-            continue;
-
-        }
-
-        
 
         if (hash_key_r[0] == hash_key[0] &&
 
@@ -234,30 +232,31 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
 
             __xrw uint32_t count;
 
-	    flow_entry_found = 1;
+            flow_entry_found = 1;
 
             b_info = (__addr40 bucket_entry_info *)&state_hashtable[hash_value].entry[i].bucket_entry_info_value;
 
-            
+            heap_info = (__addr40 tracking *)&heapify[hash_value];
             count = 1;
 
-            mem_test_add(&count,(__addr40 void *)&b_info->hit_count[0], 1 << 2);
-            mem_test_add(&count,(__addr40 void *)&b_info->hit_count[1], 1 << 2);
-            mem_test_add(&count,(__addr40 void *)&b_info->hit_count[2], 1 << 2);
+            mem_test_add(&count,(__addr40 void *)&b_info->hit_count, 1 << 2);
+            
+            //for heap_arr
+            mem_test_add(&count,(__addr40 void *)&heap_info->heap_arr[i], 1 << 2);
 
             if (count == 0xFFFFFFFF-1) { /* Never incr to 0 or 2^32 */
 
                 count = 2;
 
-                mem_add32(&count,(__addr40 void *)&b_info->hit_count[0], 1 << 2);
-                mem_add32(&count,(__addr40 void *)&b_info->hit_count[1], 1 << 2);
-                mem_add32(&count,(__addr40 void *)&b_info->hit_count[2], 1 << 2);
+                mem_add32(&count,(__addr40 void *)&b_info->hit_count, 1 << 2);
+                //for heap_arr
+                mem_add32(&count,(__addr40 void *)&heap_info->heap_arr[i], 1 << 2);
 
             } else if (count == 0xFFFFFFFF) {
 
-                mem_incr32((__addr40 void *)&b_info->hit_count[0]);
-                mem_incr32((__addr40 void *)&b_info->hit_count[1]);
-                mem_incr32((__addr40 void *)&b_info->hit_count[2]);
+                mem_incr32((__addr40 void *)&b_info->hit_count);
+                //for heap_arr
+                mem_incr32((__addr40 void *)&heap_info->heap_arr[i]);
 
             }
 
