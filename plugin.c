@@ -186,7 +186,7 @@ int pif_plugin_lookup_state(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_da
 
 
     //increase global counter
-    gc = &global_counter;
+    gc = (__addr40 uint32_t *) &global_counter;
     mem_incr32((__addr40 void *)gc);
     /* TODO: Add another field to indicate direction ?*/
 
